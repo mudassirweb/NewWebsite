@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TechNova Hub — Search UX Fix</title>
+<style>
+  :root{
+    --bg: #e6eefc;
+    --card: #ffffff;
+    --text: #0c2030;
+    --muted: #516774;
+    --accent-cyan: #49c7ff;
+    --accent-violet: #8a63ff;
+    --nav-bg: linear-gradient(90deg,#6f7bff,#9a78ff);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, Arial;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header.site-header{
+    padding:40px 6%;
+    text-align:center;
+    background: linear-gradient(135deg, rgba(138,99,255,0.12), rgba(73,199,255,0.06));
+    border-bottom: 1px solid rgba(10,20,40,0.04);
+  }
+  header h1{font-size:2.2rem;color:#072033;margin-bottom:6px}
+  header p.lead{color:var(--muted);max-width:900px;margin:0 auto}
+
+  /* ---- SEARCH: placed after header, before nav ---- */
+  .search-wrap{
+    padding:14px 6%;
+    display:flex;
+    justify-content:flex-start; /* align to nav start (Home) */
+    align-items:center;
+    gap:12px;
+    background: transparent;
+  }
+
+  /* container that's aligned with nav left edge */
+  .search-inner{
+    position:relative;
+    /* initial width small and will be changed by JS */
+    width: 220px;
+    max-width:86%;
+    transition: width 380ms cubic-bezier(.2,.9,.2,1), box-shadow 200ms;
+  }
+
+  /* the input itself */
+  .search-input{
+    width:100%;
+    padding:12px 44px 12px 44px; /* space for icon inside */
+    font-size:16px;
+    line-height:20px;
+    border-radius:999px;
+    border:1px solid rgba(10,20,40,0.06);
+    background: var(--card);
+    color:var(--text);
+    outline:none;
+    box-shadow: 0 8px 18px rgba(11,30,50,0.04);
+  }
+  .search-input::placeholder{ color: #91a7bb; }
+
+  /* professional inline SVG icon inside the input */
+  .search-icon{
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    width:1.05em;     /* match the font-size */
+    height:1.05em;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+  }
+  .search-icon svg{ width:100%; height:100%; display:block; }
+
+  /* subtle focus state */
+  .search-inner.focused{
+    box-shadow: 0 16px 40px rgba(138,99,255,0.12);
+    border-radius:999px;
+  }
+
+  /* NAV */
+  nav.topnav{
+    background: var(--nav-bg);
+    padding:8px 6%;
+    box-shadow: 0 6px 20px rgba(15,20,40,0.08);
+  }
+  nav.topnav ul{ display:flex; gap:8px; list-style:none; align-items:center; justify-content:flex-start; }
+  nav.topnav a{
+    display:inline-block;
+    padding:12px 18px;
+    color:#fff;
+    text-decoration:none;
+    border-radius:8px;
+    font-weight:600;
+    letter-spacing:0.4px;
+    font-size:14px;
+    transition: transform 160ms, background 160ms;
+  }
+  nav.topnav a:hover{ transform:translateY(-3px); box-shadow:0 10px 26px rgba(10,20,40,0.08) }
+  nav.topnav a.active{ background: rgba(255,255,255,0.12) }
+
+  main.site-main{
+    padding:28px 6%;
+    min-height: calc(100vh - 260px); /* ensure main fills page area between header/footer */
+  }
+
+  /* basic section */
+  section{
+    max-width:1100px;
+    margin:0 auto;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,252,255,0.98));
+    padding:26px;
+    border-radius:12px;
+    box-shadow: 0 8px 28px rgba(11,30,60,0.06);
+    border:1px solid rgba(10,20,40,0.03);
+  }
+  h2{ color: var(--accent-violet); margin-bottom:10px }
+  p{ color: #12303e; line-height:1.8; margin-bottom:14px; text-align:justify }
+
+  footer.site-footer{
+    background: linear-gradient(90deg,#6f7bff,#9a78ff);
+    padding:30px 6%;
+    color:white;
+    text-align:center;
+  }
+
+  /* responsive */
+  @media (max-width:780px){
+    .search-wrap{ justify-content:center }
+    .search-inner{ width:86% !important }
+    nav.topnav ul{ justify-content:center; flex-wrap:wrap }
+  }
+</style>
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>TechNova Hub</h1>
+    <p class="lead"><center>Balanced, professional tech coverage — now with precise search UX</center></p>
+  </header>
+
+  <!-- SEARCH: placed just after header and before nav -->
+  <div class="search-wrap" aria-hidden="false">
+    <!-- search-inner will be positioned to align with the nav left edge;
+         JS will compute expanded width to align with Contact tab's right edge -->
+    <div id="searchInner" class="search-inner" role="search" aria-label="Site search">
+      <input id="siteSearch" class="search-input" type="search" placeholder="Search..." aria-label="Search TechNova">
+      <span class="search-icon" aria-hidden="true">
+        <!-- Professional magnifier SVG (clean stroke + subtle gradient) -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="gradMag" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#49c7ff"/>
+              <stop offset="1" stop-color="#8a63ff"/>
+            </linearGradient>
+          </defs>
+          <path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" fill="none" stroke="url(#gradMag)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 21l-4.5-4.5" fill="none" stroke="url(#gradMag)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- NAV (must be after search in DOM) -->
+  <nav class="topnav" role="navigation" aria-label="Primary">
+    <ul id="mainNav">
+      <li><a href="#home" data-target="home" class="nav-link active">Home</a></li>
+      <li><a href="#ai" data-target="ai" class="nav-link">AI & Innovation</a></li>
+      <li><a href="#startups" data-target="startups" class="nav-link">Startups</a></li>
+      <li><a href="#reviews" data-target="reviews" class="nav-link">Reviews</a></li>
+      <li><a href="#contact" data-target="contact" class="nav-link">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main class="site-main" id="siteMain" tabindex="-1">
+    <section id="home" class="active">
+      <h2>Home — Understanding technology today</h2>
+      <p>TechNova Hub brings clear explanations and practical context so you can understand not just what is new, but why it matters. Read on for thoughtful analysis, actionable takeaways, and practical guides. Our content aims to give you a strong foundation as well as current perspectives on where technology is headed.</p>
+      <p>We cover architecture trends, developer tooling, AI in production, and product strategy. Each long-form piece contains examples and suggested next steps you can use to experiment or adopt the ideas in your own work.</p>
+      <p>In addition, our editors curate a concise list of high-value resources for readers who want to go deeper. Whether you are learning or building, our materials are designed to be practical and immediately useful.</p>
+    </section>
+
+    <section id="ai" style="display:none">
+      <h2>AI & Innovation</h2>
+      <p>Artificial Intelligence continues to mature, entering product and enterprise environments with increasing impact. Successful teams combine model development with robust data pipelines, observability, and governance. This section covers engineering practices, deployment patterns and the ethical considerations necessary to ensure AI systems are safe and valuable in the long term.</p>
+      <p>We explain techniques like model distillation, quantization for edge deployment, and the trade-offs between latency, accuracy and cost. We include examples of real-world systems and practical checklists for teams shipping AI features.</p>
+      <p>Additionally, innovation often emerges at the intersection of disciplines. This section highlights when hardware-software co-design, domain-specific accelerators, or new evaluation methods provide practical benefits.</p>
+    </section>
+
+    <section id="startups" style="display:none">
+      <h2>Startups & Entrepreneurship</h2>
+      <p>Startups create value by focusing on specific customer problems and rapidly iterating toward product-market fit. Founders must combine disciplined experimentation with clear metrics that reflect long-term retention and value. This area provides frameworks for customer discovery, MVP design, and early growth strategies.</p>
+      <p>We also explore operational scaling: hiring, onboarding, and establishing processes that preserve velocity while increasing reliability. The advice focuses on practical decisions founders face in early and growth stages.</p>
+      <p>Case studies and founder interviews provide lived examples of trade-offs, mistakes, and successful tactics that aspiring entrepreneurs can adapt to their context.</p>
+    </section>
+
+    <section id="reviews" style="display:none">
+      <h2>Reviews — practical buying advice</h2>
+      <p>In a crowded marketplace, practical reviews focus on how products behave under real workloads and which trade-offs matter most. For developers and builders, ergonomics, supportability and upgrade paths often matter more than headline specs. Our reviews combine hands-on testing with comparison guidance to help you choose the right tools.</p>
+      <p>We also evaluate software tools by how they integrate with developer workflows: CI/CD, observability, and developer experience considerations are primary in our recommendations.</p>
+    </section>
+
+    <section id="contact" style="display:none">
+      <h2>Contact — collaborate with us</h2>
+      <p>We welcome pitches, collaboration requests, and reader feedback. If you have an article idea, partnership proposal, or product you'd like reviewed, email us at <a href="mailto:info@technovahub.example">info@technovahub.example</a>. We aim to respond within a few business days and appreciate clear, concise inquiries.</p>
+      <p>Join our newsletter for editor-curated insights. For partnership enquiries, include relevant audience metrics and the type of collaboration you have in mind so we can evaluate fit quickly.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>© 2025 TechNova Hub — All rights reserved</div>
+  </footer>
+
+<script>
+  (function(){
+    // DOM references
+    const searchInner = document.getElementById('searchInner');
+    const searchInput = document.getElementById('siteSearch');
+    const nav = document.getElementById('mainNav');
+    const contactLink = Array.from(nav.querySelectorAll('a')).find(a => a.dataset.target === 'contact');
+    const homeLink = Array.from(nav.querySelectorAll('a')).find(a => a.dataset.target === 'home');
+    const navLinks = nav.querySelectorAll('a');
+
+    // Sections logic (show only selected)
+    function showSection(name){
+      document.querySelectorAll('main section').forEach(sec=>{
+        if(sec.id === name){
+          sec.style.display = '';
+          sec.classList.add('active');
+        } else {
+          sec.style.display = 'none';
+          sec.classList.remove('active');
+        }
+      });
+      // nav active state
+      navLinks.forEach(a => a.classList.toggle('active', a.dataset.target === name));
+      // scroll to top of page so section sits below header
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    // attach nav handlers
+    navLinks.forEach(link=>{
+      link.addEventListener('click', e=>{
+        e.preventDefault();
+        const t = link.dataset.target;
+        showSection(t);
+      });
+    });
+
+    // Compute expanded width so right edge aligns to contactLink's right edge.
+    // We'll compute the distance from the left edge of searchInner to the right edge of contactLink
+    // and set that as the expanded width (plus small padding).
+    function computeExpandedWidth(){
+      // Ensure elements exist
+      if(!contactLink || !searchInner) return null;
+      const contactRect = contactLink.getBoundingClientRect();
+      const searchRect = searchInner.getBoundingClientRect();
+      // compute target width so searchInner.right ~ contactRect.right
+      const viewportOffset = 8; // small padding
+      const desiredRight = contactRect.right + viewportOffset;
+      const left = searchRect.left;
+      let width = desiredRight - left;
+      // keep bounds: min 220px, max 92% viewport
+      const maxAllowed = Math.round(window.innerWidth * 0.92);
+      width = Math.max(220, Math.min(width, maxAllowed));
+      return width;
+    }
+
+    // on focus, set expanded width and add class
+    searchInput.addEventListener('focus', (e)=>{
+      const w = computeExpandedWidth();
+      if(w) {
+        searchInner.style.width = w + 'px';
+      } else {
+        searchInner.style.width = '520px';
+      }
+      searchInner.classList.add('focused');
+    });
+
+    // on blur revert to original width
+    searchInput.addEventListener('blur', (e)=>{
+      // small delay to let click on suggestions etc. (if any)
+      setTimeout(()=>{
+        searchInner.style.width = ''; // revert to CSS width (defaults to 220px)
+        searchInner.classList.remove('focused');
+      }, 120);
+    });
+
+    // recompute on resize in case nav moves
+    window.addEventListener('resize', ()=> {
+      if(document.activeElement === searchInput){
+        const w = computeExpandedWidth();
+        if(w) searchInner.style.width = w + 'px';
+      } else {
+        searchInner.style.width = '';
+      }
+    });
+
+    // initialize: ensure Home shown
+    showSection('home');
+
+    // keyboard '/' to focus search
+    window.addEventListener('keydown', (e)=>{
+      const tag = document.activeElement.tagName.toLowerCase();
+      if(e.key === '/' && tag !== 'input' && tag !== 'textarea'){
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+  })();
+</script>
+
+</body>
+</html>

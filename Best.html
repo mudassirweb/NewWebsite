@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TechNova Hub — Search UX Fix</title>
+<style>
+  :root{
+    --bg: #e6eefc;
+    --card: #ffffff;
+    --text: #0c2030;
+    --muted: #516774;
+    --accent-cyan: #49c7ff;
+    --accent-violet: #8a63ff;
+    --nav-bg: linear-gradient(90deg,#6f7bff,#9a78ff);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, Arial;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header.site-header{
+    padding:40px 6%;
+    text-align:center;
+    background: linear-gradient(135deg, rgba(138,99,255,0.12), rgba(73,199,255,0.06));
+    border-bottom: 1px solid rgba(10,20,40,0.04);
+  }
+  header h1{font-size:2.2rem;color:#072033;margin-bottom:6px}
+  header p.lead{color:var(--muted);max-width:900px;margin:0 auto}
+
+  /* ---- SEARCH: placed after header, before nav ---- */
+  .search-wrap{
+    padding:14px 6%;
+    display:flex;
+    justify-content:flex-start; /* align to nav start (Home) */
+    align-items:center;
+    gap:12px;
+    background: transparent;
+  }
+
+  /* container that's aligned with nav left edge */
+  .search-inner{
+    position:relative;
+    /* initial width small and will be changed by JS */
+    width: 220px;
+    max-width:86%;
+    transition: width 380ms cubic-bezier(.2,.9,.2,1), box-shadow 200ms;
+  }
+
+  /* the input itself */
+  .search-input{
+    width:100%;
+    padding:12px 44px 12px 44px; /* space for icon inside */
+    font-size:16px;
+    line-height:20px;
+    border-radius:999px;
+    border:1px solid rgba(10,20,40,0.06);
+    background: var(--card);
+    color:var(--text);
+    outline:none;
+    box-shadow: 0 8px 18px rgba(11,30,50,0.04);
+  }
+  .search-input::placeholder{ color: #91a7bb; }
+
+  /* professional inline SVG icon inside the input */
+  .search-icon{
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    width:1.05em;     /* match the font-size */
+    height:1.05em;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+  }
+  .search-icon svg{ width:100%; height:100%; display:block; }
+
+  /* subtle focus state */
+  .search-inner.focused{
+    box-shadow: 0 16px 40px rgba(138,99,255,0.12);
+    border-radius:999px;
+  }
+
+  /* NAV */
+  nav.topnav{
+    background: var(--nav-bg);
+    padding:8px 6%;
+    box-shadow: 0 6px 20px rgba(15,20,40,0.08);
+  }
+  nav.topnav ul{ display:flex; gap:8px; list-style:none; align-items:center; justify-content:flex-start; }
+  nav.topnav a{
+    display:inline-block;
+    padding:12px 18px;
+    color:#fff;
+    text-decoration:none;
+    border-radius:8px;
+    font-weight:600;
+    letter-spacing:0.4px;
+    font-size:14px;
+    transition: transform 160ms, background 160ms;
+  }
+  nav.topnav a:hover{ transform:translateY(-3px); box-shadow:0 10px 26px rgba(10,20,40,0.08) }
+  nav.topnav a.active{ background: rgba(255,255,255,0.12) }
+
+  main.site-main{
+    padding:28px 6%;
+    min-height: calc(100vh - 260px); /* ensure main fills page area between header/footer */
+  }
+
+  /* basic section */
+  section{
+    max-width:1100px;
+    margin:0 auto;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,252,255,0.98));
+    padding:26px;
+    border-radius:12px;
+    box-shadow: 0 8px 28px rgba(11,30,60,0.06);
+    border:1px solid rgba(10,20,40,0.03);
+  }
+  h2{ color: var(--accent-violet); margin-bottom:10px }
+  p{ color: #12303e; line-height:1.8; margin-bottom:14px; text-align:justify }
+
+  footer.site-footer{
+    background: linear-gradient(90deg,#6f7bff,#9a78ff);
+    padding:30px 6%;
+    color:white;
+    text-align:center;
+  }
+
+  /* responsive */
+  @media (max-width:780px){
+    .search-wrap{ justify-content:center }
+    .search-inner{ width:86% !important }
+    nav.topnav ul{ justify-content:center; flex-wrap:wrap }
+  }
+</style>
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>TechNova Hub</h1>
+    <p class="lead"><center>Balanced, professional tech coverage — now with precise search UX</center></p>
+  </header>
+
+  <!-- SEARCH: placed just after header and before nav -->
+  <div class="search-wrap" aria-hidden="false">
+    <!-- search-inner will be positioned to align with the nav left edge;
+         JS will compute expanded width to align with Contact tab's right edge -->
+    <div id="searchInner" class="search-inner" role="search" aria-label="Site search">
+      <input id="siteSearch" class="search-input" type="search" placeholder="Search..." aria-label="Search TechNova">
+      <span class="search-icon" aria-hidden="true">
+        <!-- Professional magnifier SVG (clean stroke + subtle gradient) -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="gradMag" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#49c7ff"/>
+              <stop offset="1" stop-color="#8a63ff"/>
+            </linearGradient>
+          </defs>
+          <path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" fill="none" stroke="url(#gradMag)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 21l-4.5-4.5" fill="none" stroke="url(#gradMag)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- NAV (must be after search in DOM) -->
+  <nav class="topnav" role="navigation" aria-label="Primary">
+    <ul id="mainNav">
+      <li><a href="#home" data-target="home" class="nav-link active">Home</a></li>
+      <li><a href="#ai" data-target="ai" class="nav-link">AI & Innovation</a></li>
+      <li><a href="#startups" data-target="startups" class="nav-link">Startups</a></li>
+      <li><a href="#reviews" data-target="reviews" class="nav-link">Reviews</a></li>
+      <li><a href="#contact" data-target="contact" class="nav-link">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main class="site-main" id="siteMain" tabindex="-1">
+   <section id="home" class="active">
+  <h2>Home — Understanding Technology Today</h2>
+  <p>Welcome to TechNova Hub — your trusted destination for discovering how technology shapes the modern world. In a landscape where innovation moves faster than comprehension, understanding the implications of emerging tools, systems, and digital philosophies has never been more essential. The Home section serves as the foundation of our digital ecosystem, bringing together ideas, trends, and technologies that define the future of human progress.</p>
+
+  <p>Technology is no longer confined to laboratories or corporations; it lives in our homes, our pockets, and even our thoughts. From the moment we wake up to the glow of a smartphone to the instant our data travels across global networks, technology mediates nearly every experience. Yet, few pause to ask how it all works or what it means for our collective future. At TechNova, we strive to bridge that gap between knowledge and experience — to make the invisible visible, the abstract understandable, and the complex approachable.</p>
+
+  <p>Understanding technology begins with context. Every innovation is a story of human ambition, of trial and triumph. The algorithms that power today’s social media, the sensors in our health devices, or the satellites that map our world — each of these is an evolution in a larger timeline of invention. As readers explore TechNova, they gain not just information but perspective — an appreciation for how interconnected systems transform societies and economies in subtle yet profound ways.</p>
+
+  <p>In this age of accelerated change, knowledge becomes the new literacy. Being technologically literate means more than just using gadgets; it means understanding the logic that drives them. How do neural networks learn? What makes quantum computing so revolutionary? Why does blockchain matter beyond cryptocurrencies? Each of these questions invites exploration, and our editorial mission is to answer them in ways that are both insightful and practical.</p>
+
+  <p>As the digital landscape evolves, one of the biggest challenges is separating meaningful innovation from hype. Every year, we are introduced to new buzzwords — Web3, metaverse, edge computing, generative AI — yet the true value often lies beneath the surface. At TechNova, we decode these trends, peeling back the layers to reveal how and why they matter. We assess whether an emerging technology truly solves a problem, improves accessibility, or enhances creativity — or if it merely captures attention without delivering real impact.</p>
+
+  <p>Another core philosophy that guides TechNova is inclusivity in technology. The future cannot be built by a few for the many; it must be shaped collaboratively. We explore stories of how technology is democratizing opportunity — how open-source software empowers communities, how digital education reshapes learning, and how small startups challenge global giants through sheer ingenuity. Behind every innovation is a human story, and we bring those stories to life.</p>
+
+  <p>We also dive deep into the ethics of innovation. Technology is power, and with power comes responsibility. The world has seen how algorithms can amplify bias, how data collection can erode privacy, and how automation can disrupt livelihoods. But technology can also heal — improving medical outcomes, enhancing accessibility, and supporting environmental conservation. Through in-depth analyses, interviews, and case studies, TechNova helps readers navigate this duality — empowering them to see both the promise and the peril of innovation.</p>
+
+  <p>In a connected world, no discipline exists in isolation. Artificial intelligence collaborates with design; biology merges with computing; energy innovations intertwine with data analytics. The boundaries between sectors blur as we move toward an era of interdisciplinary innovation. TechNova curates stories from across this spectrum — showing how cross-pollination of ideas leads to breakthroughs that were once unimaginable. Whether it’s AI-driven art, blockchain in governance, or quantum materials in space exploration, we help readers see the threads that tie them together.</p>
+
+  <p>One of our long-term editorial focuses is digital transformation — how individuals, organizations, and governments adapt to change. We discuss strategies for building resilience in a volatile world, where technology not only supports operations but defines them. For businesses, transformation means rethinking processes, adopting agile frameworks, and prioritizing user experience. For individuals, it means continuous learning — staying curious, adaptable, and informed. Through guides and insights, we help readers embrace transformation rather than fear it.</p>
+
+  <p>Education plays a pivotal role in shaping a technologically fluent society. TechNova’s Home section regularly features thought pieces on digital literacy, remote learning, and the future of education. We explore how tools like AI tutors, virtual classrooms, and gamified learning are reshaping the way we acquire knowledge. Our mission is to help readers understand how technology can be used as a force for empowerment rather than dependency, cultivating critical thinkers who can question, create, and innovate.</p>
+
+  <p>The environmental implications of technology also form a vital thread in our narrative. While innovation can strain natural resources, it also holds the key to sustainability. From green computing to renewable energy systems, we examine how data and design converge to build a cleaner, more efficient world. We spotlight startups and research labs developing technologies that reduce emissions, optimize agriculture, and rethink manufacturing. Sustainability isn’t just a buzzword at TechNova; it’s a principle we integrate into every discussion about the future.</p>
+
+  <p>At the same time, the digital economy is redefining work and creativity. The gig economy, remote collaboration tools, and creator platforms have reshaped how value is created and shared. Through comprehensive features, we analyze the pros and cons of this evolution — how flexibility can coexist with stability, and how automation may redefine skill sets rather than replace them. We believe the future of work lies in partnership between human intelligence and machine precision, not in competition between them.</p>
+
+  <p>Cybersecurity is another pillar of understanding technology today. As data becomes the world’s most valuable resource, protecting it becomes paramount. TechNova explores how encryption, zero-trust architectures, and AI-driven threat detection safeguard our digital lives. But beyond the technical side, we also address the cultural aspect of security — how awareness, policy, and ethics play a role in creating a safe digital ecosystem.</p>
+
+  <p>Throughout this section, readers will find long-form analyses, quick insights, and interactive explorations designed to make learning engaging. Whether you are a student trying to understand the building blocks of computing, a professional adapting to technological disruption, or an innovator seeking inspiration, TechNova’s Home section is your gateway to understanding the modern digital age in all its depth and dynamism.</p>
+
+  <p>In essence, understanding technology is not just about knowing how things work — it’s about recognizing the patterns that drive change. It’s about asking the right questions, challenging assumptions, and staying open to continuous evolution. The world of technology is a living organism, constantly growing, learning, and adapting. By reading, exploring, and engaging with TechNova, you become part of that growth.</p>
+
+  <p>As we continue expanding our platform, TechNova remains committed to quality, clarity, and community. We invite readers to contribute, question, and collaborate. Because technology’s story is not written by algorithms alone — it’s written by people who dare to imagine, innovate, and improve. Together, we can shape a future where technology doesn’t just serve humanity but elevates it.</p>
+
+  <p>So as you explore this website, take your time to dive deep into each section — from the rise of AI to the startup ecosystems and groundbreaking reviews that define tomorrow’s innovations. TechNova’s mission is simple: to empower understanding, inspire curiosity, and fuel meaningful change. Welcome to the frontier of modern knowledge — welcome to TechNova Hub.</p>
+</section>
+
+
+
+    <section id="ai">
+  <h2>AI & Innovation — Redefining the Future</h2>
+  <p>Artificial Intelligence (AI) is not just a technology; it is the foundation of a new era of human evolution. It represents the synthesis of logic, data, and creativity — a fusion that challenges what it means to think, decide, and create. In this section of TechNova Hub, we go far beyond headlines and hype to reveal the reality of AI: what it truly is, how it functions, and why it is transforming every corner of our civilization. From healthcare to art, from ethics to automation, AI is reshaping not only industries but the very architecture of human thought.</p>
+
+  <p>To understand AI, one must first understand its philosophy. Artificial Intelligence at its core is the pursuit of building systems that can simulate aspects of human cognition — reasoning, perception, learning, and problem-solving. But what differentiates AI from conventional computing is adaptability. Traditional software follows rigid instructions, while AI learns from data, refines its understanding, and evolves over time. This ability to improve autonomously makes AI not just a tool but a collaborator — an evolving partner in creativity, science, and design.</p>
+
+  <p>The journey of AI began decades ago, long before the term became popular. In the mid-20th century, visionaries like Alan Turing and John McCarthy laid the groundwork for machine intelligence. Turing’s question — “Can machines think?” — was not merely technical but philosophical. It challenged the boundaries between human and machine cognition. Since then, each era has added a new layer to AI’s evolution: symbolic AI of the 1950s, expert systems of the 1980s, neural networks of the 1990s, and deep learning of the 2010s. Today, in the 2020s and beyond, AI has entered a new dimension — generative intelligence — where machines can create, imagine, and produce original content that rivals human output.</p>
+
+  <p>One of the most transformative developments in recent years is the rise of large language models (LLMs). These systems, such as GPT and other neural architectures, are trained on vast corpora of human knowledge, allowing them to generate language, code, music, and even visual art with remarkable fluency. The implications are profound. What was once considered a uniquely human domain — creativity — is now being shared with machines. Yet, rather than replacing creativity, AI amplifies it. Writers, designers, scientists, and engineers use AI as a co-creator, transforming their workflows and unlocking levels of efficiency and imagination previously unimaginable.</p>
+
+  <p>AI-driven innovation goes far beyond content creation. It’s at the core of every transformative field of the 21st century. In healthcare, AI algorithms can analyze medical scans with precision surpassing human experts. They assist in early diagnosis of diseases such as cancer, Alzheimer’s, and cardiovascular conditions, often detecting patterns invisible to the naked eye. In drug discovery, machine learning models simulate molecular interactions, reducing the time to develop new medicines from years to months. Personalized treatment plans powered by AI adapt dynamically to a patient’s data, improving outcomes while minimizing risks. This is not science fiction — it’s the emerging standard of modern medicine.</p>
+
+  <p>In transportation, AI propels the shift toward autonomy. Self-driving vehicles use complex neural networks that interpret sensor data in real time, making split-second decisions that mirror human judgment but with greater precision and fewer errors. From autonomous drones that deliver critical supplies to intelligent traffic systems that reduce congestion and pollution, AI is redefining how we move and connect. The dream of fully autonomous mobility is no longer distant; it is being tested in cities worldwide, where machine intelligence navigates the complexity of real environments with growing confidence.</p>
+
+  <p>In education, AI personalizes learning experiences. Intelligent tutoring systems analyze student behavior, adapt lessons to individual strengths and weaknesses, and provide real-time feedback that improves retention and understanding. In creative fields, AI enhances design, music, and storytelling — not by replacing human vision but by augmenting it. Artists now use generative algorithms to create immersive digital art, architects rely on AI simulations to optimize sustainable structures, and musicians collaborate with AI tools to compose soundscapes beyond traditional limits. The collaboration between human intuition and artificial creativity is giving birth to a new art form — one where code and imagination merge.</p>
+
+  <p>Innovation, however, is not only about capability; it’s about transformation. True innovation happens when technology redefines the way we live, think, and relate to one another. AI’s influence on society is both empowering and disruptive. On one hand, it democratizes access to knowledge, automates routine labor, and increases productivity at an unprecedented scale. On the other, it challenges long-standing notions of privacy, authorship, and employment. The ethical dimension of AI cannot be ignored — it requires deliberate reflection and global collaboration to ensure that innovation serves humanity rather than dominating it.</p>
+
+  <p>Bias in AI systems remains one of the most pressing concerns. Since AI learns from data, it can inherit the prejudices and inequalities embedded within that data. This can manifest in biased hiring systems, discriminatory algorithms in law enforcement, or unfair credit evaluations. The solution lies not in rejecting AI, but in refining it. Developers, ethicists, and policymakers must work together to ensure fairness, transparency, and accountability in AI systems. TechNova explores these challenges through investigative features and expert interviews, highlighting solutions such as explainable AI (XAI), federated learning, and ethical design frameworks.</p>
+
+  <p>Beyond ethics, the relationship between AI and employment is a topic of global importance. Automation threatens to replace certain tasks, but it also creates new industries and roles. The rise of “AI literacy” — the ability to understand, use, and collaborate with intelligent systems — is becoming essential for the workforce of the future. Jobs will not vanish; they will evolve. The greatest demand will be for those who can integrate human creativity with machine precision. At TechNova, we emphasize that the future of work is not about competing with machines, but about coexisting and co-creating with them.</p>
+
+  <p>Another powerful domain of AI innovation lies in climate and sustainability. AI models help predict environmental changes, optimize energy consumption, and design smarter cities. From predicting wildfires to managing water resources, AI supports a planet-conscious agenda. Green AI initiatives focus on reducing the carbon footprint of training massive models, ensuring that innovation does not come at the cost of environmental degradation. Researchers are developing energy-efficient architectures and hardware accelerators that make machine learning sustainable — a crucial step toward responsible innovation.</p>
+
+  <p>AI also drives revolution in security and defense. Intelligent systems monitor cyber threats, detect anomalies in massive data networks, and automate responses to potential breaches. In national defense, AI is used for surveillance, logistics, and strategy modeling. Yet, this power brings with it the danger of misuse. The race to weaponize AI underscores the urgent need for international governance frameworks that prevent escalation and ensure ethical use. TechNova believes that the future of AI security must balance innovation with restraint — fostering peace, not paranoia.</p>
+
+  <p>In the business world, AI fuels decision-making and growth. Predictive analytics allows organizations to anticipate trends, personalize marketing, and optimize operations. AI-driven supply chains adjust dynamically to global fluctuations, while recommendation engines transform e-commerce experiences by predicting user preferences with uncanny accuracy. Financial sectors employ AI for fraud detection and risk management, identifying irregularities that would take human analysts months to uncover. The result is a more responsive, data-driven economy — one where decisions are powered by insight rather than instinct.</p>
+
+  <p>Perhaps the most exciting — and controversial — branch of AI innovation is in creativity and consciousness. Can a machine ever truly understand emotion, beauty, or meaning? Philosophers and scientists continue to debate this question. Generative AI models can produce poetry, compose symphonies, and paint in the style of Van Gogh, but do they “feel” what they create? Some argue that AI is merely mimicking human expression, while others suggest that intelligence itself need not be conscious to be meaningful. TechNova engages with these philosophical inquiries, blending science with speculation to explore the nature of artificial thought.</p>
+
+  <p>We also examine how AI is reshaping scientific discovery. Machine learning algorithms analyze astronomical data to detect new planets, predict protein folding structures for biomedical research, and accelerate quantum simulations. AI acts as a catalyst in science — not replacing human curiosity but amplifying it. Where once a team of scientists might take years to analyze a dataset, AI can uncover patterns within days. This compression of time enables faster innovation and a deeper understanding of the universe itself.</p>
+
+  <p>Innovation thrives when access to technology is inclusive. Open-source AI frameworks like TensorFlow, PyTorch, and Hugging Face have democratized machine learning, allowing students, researchers, and startups to build intelligent systems without prohibitive costs. The community-driven approach encourages transparency and accelerates discovery. By contributing to shared datasets, model repositories, and ethical guidelines, technologists around the world are collaboratively shaping the direction of AI’s growth.</p>
+
+  <p>Yet, amidst all the optimism, there remains a critical question: how do we ensure AI aligns with human values? The concept of “alignment” refers to designing AI systems whose goals remain compatible with our own. As models grow more autonomous, maintaining control becomes increasingly complex. Researchers in AI safety work to create systems that can explain their reasoning, respect human preferences, and act predictably in unforeseen circumstances. These efforts will determine whether AI becomes humanity’s greatest ally or its most unpredictable creation.</p>
+
+  <p>The next frontier of AI innovation lies in multimodal intelligence — systems that integrate text, image, video, sound, and sensor data simultaneously. This convergence enables machines to perceive the world in richer ways, closer to human experience. Imagine an AI that can read a medical report, analyze a patient’s MRI scan, listen to their heartbeat, and provide an integrated diagnosis — all in seconds. Or a creative AI that composes a film score while editing the visuals based on emotional tone. Such applications mark the dawn of “integrated cognition,” a phase where AI’s perception becomes holistic rather than fragmented.</p>
+
+  <p>AI is also driving revolutions in robotics. From precision agriculture robots that monitor crops and optimize irrigation to humanoid assistants capable of emotional interaction, robotics blends the physical and digital worlds. The integration of AI in robotics turns static machines into adaptive entities — capable of learning from their environment and collaborating with humans seamlessly. The future of robotics lies not in replication of humans but in complementing our abilities, extending human reach into places and tasks previously impossible.</p>
+
+  <p>TechNova Hub stands as a platform where innovation meets ethics, science meets storytelling, and technology meets humanity. Our mission is to make AI understandable to everyone — not just engineers or data scientists, but thinkers, creators, and dreamers. We believe that the real power of AI lies in its humanization — in teaching people not to fear it, but to guide it. Through detailed explainers, interviews, and thought essays, we aim to build digital literacy that empowers every reader to see AI not as a black box, but as a mirror reflecting our collective intelligence.</p>
+
+  <p>In conclusion, AI & Innovation is not merely a section — it is a journey. A journey through the corridors of possibility, where logic meets imagination and machines learn to think. As you explore this space on TechNova Hub, remember that every line of code carries a fragment of human intention, and every algorithm reflects our vision of the world. The choices we make today will determine whether AI becomes an extension of our creativity or a consequence of our complacency. The story of AI is, at its heart, the story of humanity — curious, imperfect, and endlessly innovative.</p>
+</section>
+
+
+
+    <section id="startups">
+  <h2>Startups — Building the Next Generation of Innovation</h2>
+  <p>Startups are the pulse of the modern economy — dynamic, daring, and determined to disrupt the status quo. They represent the raw energy of ideas meeting opportunity, the spirit of innovation distilled into entrepreneurial ambition. At TechNova Hub, our goal is to explore not just the success stories, but the mindset, mechanics, and movements behind every startup revolution. From Silicon Valley to Bangalore, from biotech to blockchain, startups are rewriting the rules of business and reshaping the future of work, wealth, and technology.</p>
+
+  <p>In the 21st century, entrepreneurship has evolved from a risky endeavor into a cultural phenomenon. What was once a path taken by a few bold dreamers has now become a global aspiration. The digital era has leveled the playing field — with the right idea and the right execution, anyone, anywhere can build something world-changing. The democratization of technology, capital, and knowledge has made innovation accessible like never before. Cloud computing, open-source software, remote work tools, and global funding platforms have turned the world into one vast innovation hub. Yet, while opportunities have multiplied, so have challenges. Startups today must navigate fierce competition, rapid technological shifts, and an ecosystem that rewards both speed and resilience.</p>
+
+  <p>The essence of a startup lies in solving a real problem — often one that the world didn’t even realize existed. Great startups are born at the intersection of insight and necessity. When Airbnb was founded, few could imagine people renting out spare rooms to strangers; when Uber appeared, the idea of replacing traditional taxis with personal vehicles seemed impossible. Yet these startups identified pain points, reimagined them, and built scalable solutions. The heart of innovation lies in observation — the ability to see patterns and inefficiencies in everyday life and reframe them as opportunities for disruption. In this sense, startups are not just businesses; they are laboratories of human imagination.</p>
+
+  <p>The startup lifecycle is a journey — from ideation to growth, from product-market fit to scaling, and sometimes, to exit or reinvention. The early stage, often called the “zero to one” phase, is where vision outweighs resources. Founders must validate their ideas through experimentation, feedback, and iteration. The most successful startups embrace the “build-measure-learn” cycle — an agile approach that prioritizes adaptability over perfection. This lean methodology, popularized by Eric Ries, has become the operating system of modern entrepreneurship. It reminds founders that innovation is not a one-time event but an ongoing process of discovery.</p>
+
+  <p>Funding plays a crucial role in this journey. While passion fuels startups, capital sustains them. The funding landscape has transformed dramatically in the last two decades. Venture capital (VC) remains a dominant force, but new models have emerged — angel investors, accelerators, crowdfunding, and even decentralized finance (DeFi) initiatives. Seed funding gives ideas their first wings, while Series A, B, and C rounds propel scaling. However, capital is not just money; it’s mentorship, connections, and credibility. Smart founders choose investors who align with their long-term vision rather than those offering the biggest checks. As TechNova explores in our features, the relationship between founders and funders often determines whether a startup thrives or fades.</p>
+
+  <p>Beyond funding, startups thrive on culture. A company’s DNA — its values, beliefs, and behaviors — defines how it reacts to pressure and change. Startups are often celebrated for their agility, flat hierarchies, and creativity, but sustaining culture during hypergrowth is a major challenge. As teams expand and operations globalize, maintaining cohesion becomes harder. The best founders understand that culture must be intentionally crafted. Transparency, inclusion, and adaptability form the foundation of resilient organizations. Startups that neglect culture often suffer “mission drift” — losing their identity as they chase metrics and milestones. At TechNova, we highlight founders who build not just profitable companies but purposeful ones.</p>
+
+  <p>Technology is the great equalizer in the startup ecosystem. Software-as-a-Service (SaaS), Artificial Intelligence (AI), Blockchain, and the Internet of Things (IoT) have empowered small teams to do what once required entire corporations. A startup today can deploy global infrastructure on cloud platforms like AWS, Azure, or Google Cloud within hours. Data analytics and automation tools allow precision decision-making at every level. AI can predict customer churn, personalize user experiences, and optimize logistics — all at scale. This convergence of affordability and accessibility has unleashed an unprecedented wave of innovation, giving rise to micro-startups and solopreneurs capable of disrupting billion-dollar industries.</p>
+
+  <p>One of the most significant shifts in recent years has been the rise of remote-first startups. The pandemic accelerated digital collaboration, proving that innovation no longer requires physical proximity. Distributed teams can now operate seamlessly across continents, supported by tools like Slack, Notion, and GitHub. This decentralization has broadened access to global talent and reduced operational costs. More importantly, it has redefined workplace culture — emphasizing autonomy, trust, and output over traditional structures. At the same time, remote work brings challenges in communication, coordination, and mental well-being. Successful startups balance flexibility with human connection, blending technology with empathy to sustain creativity across borders.</p>
+
+  <p>The story of startups is also a story of ecosystems. Silicon Valley remains the iconic cradle of innovation, but new hubs are emerging worldwide — Bangalore, Berlin, Tel Aviv, Singapore, and Nairobi are now synonymous with entrepreneurial energy. Each ecosystem carries its unique flavor, shaped by culture, regulation, and market dynamics. India, for instance, has seen a massive boom in tech-driven startups, from fintech leaders like Razorpay and PhonePe to edtech giants like BYJU’S and physicswallah. In Africa, startups are solving problems of access — in finance, healthcare, and energy — with remarkable ingenuity. The global nature of innovation ensures that the next unicorn could emerge from anywhere, driven by local insights with global relevance.</p>
+
+  <p>Innovation in startups extends beyond technology into business models. The subscription economy, the sharing economy, and the creator economy all originated from startup experimentation. Netflix transformed entertainment through recurring subscriptions; Airbnb revolutionized hospitality through asset sharing; Patreon empowered artists through direct audience support. These models reflect a fundamental truth: innovation is not just about what you build but how you deliver value. The ability to design scalable, repeatable, and customer-centric business models defines the difference between fleeting trends and sustainable success.</p>
+
+  <p>One of the greatest challenges startups face is scaling — transforming a promising idea into a global operation. Scaling requires more than growth; it demands structure. Founders must evolve from product builders to organizational architects. Processes, systems, and leadership styles must mature without stifling agility. The paradox of scaling is that what made a startup successful at the beginning — speed, experimentation, and informality — can become obstacles at scale. Great leaders strike a balance between innovation and discipline, ensuring that the company grows without losing its soul. TechNova’s “Scaling Chronicles” series showcases case studies of startups that mastered this art, from Slack’s communication evolution to Shopify’s platform expansion.</p>
+
+  <p>Resilience is another hallmark of successful startups. For every unicorn that thrives, countless others fail. The reasons vary — market timing, product misalignment, financial mismanagement, or leadership burnout. Yet, failure in the startup world is not the end; it’s a badge of learning. Cultures like Silicon Valley’s “fail fast, learn faster” ethos encourage experimentation over perfectionism. Every setback refines strategy, strengthens leadership, and clarifies purpose. Founders who persevere through adversity often build more robust and empathetic ventures later. At TechNova, we celebrate failure as a teacher, not a stigma, emphasizing the mindset of continuous iteration that fuels long-term innovation.</p>
+
+  <p>While technology and funding dominate headlines, social impact startups are quietly redefining the essence of entrepreneurship. These ventures focus not only on profit but on purpose — solving pressing global issues like climate change, poverty, education, and healthcare. Impact-driven startups measure success in lives improved as much as in revenue generated. Platforms like Kiva enable microfinance for underserved entrepreneurs, while companies like Impossible Foods and Tesla are reimagining sustainability through innovation. The merging of profit and purpose is creating a new paradigm — one where doing good and doing well are no longer opposites but intertwined goals.</p>
+
+  <p>Diversity in startups has also emerged as a crucial factor in innovation. Teams composed of diverse backgrounds, genders, and experiences outperform homogeneous ones because they bring multiple perspectives to problem-solving. Yet, the startup ecosystem continues to face gender gaps and underrepresentation. Women founders receive only a small fraction of global venture capital funding. Initiatives such as Women Who Code, SheLeads, and Black Founders are working to close this gap, advocating for inclusivity in funding, mentorship, and leadership. True innovation requires all voices at the table — and TechNova amplifies these voices by telling their stories and highlighting their impact.</p>
+
+  <p>As technology evolves, so does the definition of entrepreneurship. The rise of Web3 and decentralized organizations (DAOs) has introduced a radical shift in ownership and governance. Startups in the blockchain space are exploring new models where users, not corporations, own platforms. Tokens replace shares, smart contracts replace intermediaries, and transparency becomes the norm. This transformation challenges traditional corporate structures, inviting a future where communities collaborate and co-own their digital ecosystems. The implications for finance, creativity, and governance are profound — and TechNova tracks these developments closely through deep dives and expert commentary.</p>
+
+  <p>Innovation in hardware startups is also resurging. While software has dominated for decades, advances in manufacturing, sensors, and 3D printing have lowered barriers for physical product creation. Robotics, wearables, IoT devices, and biotech tools are becoming the new frontier of innovation. Hardware startups face longer development cycles and higher costs, but their impact can be transformative. From drones revolutionizing agriculture to health sensors detecting disease early, the fusion of hardware and AI is creating smarter, more interconnected systems that blur the line between digital and physical worlds.</p>
+
+  <p>Startups are also transforming how we think about leadership. Traditional top-down hierarchies are being replaced by adaptive, servant-style leadership models. Founders today are expected not only to inspire but to empathize — to lead with authenticity. Emotional intelligence, once dismissed as “soft,” is now a core leadership skill. The ability to build trust, manage stress, and foster collaboration determines whether teams thrive or fracture. TechNova’s leadership interviews highlight how modern founders manage culture, diversity, and purpose alongside profitability. True leadership is no longer about command; it’s about connection.</p>
+
+  <p>The role of governments and policy in the startup world cannot be overlooked. Progressive regulatory environments enable innovation, while restrictive ones stifle it. Countries that invest in startup ecosystems — through grants, tax incentives, and digital infrastructure — attract talent and investment. For example, Estonia’s e-residency program and Singapore’s startup-friendly policies have positioned them as global innovation hubs. Conversely, bureaucratic hurdles and outdated regulations can deter innovation. Policymakers worldwide are recognizing that supporting startups is not just about economics; it’s about shaping the future workforce and technological identity of a nation.</p>
+
+  <p>Media and storytelling play a powerful role in shaping startup culture. Narratives of perseverance, failure, and success inspire the next generation of founders. However, the media’s obsession with valuation and “unicorn status” often distorts perception, glorifying growth over sustainability. TechNova advocates for a more balanced narrative — one that values ethics, impact, and innovation over hype. By showcasing startups that prioritize people and planet alongside profit, we aim to redefine what success truly means in the modern economy.</p>
+
+  <p>Looking ahead, the next decade of startups will be defined by convergence — where multiple technologies intersect to solve complex global challenges. AI-powered sustainability, biotech innovation, quantum computing startups, and space tech ventures are all pushing humanity’s boundaries. The rise of “deep tech” — companies based on scientific breakthroughs rather than digital platforms — marks a shift toward long-term impact over short-term gains. These ventures require patience, collaboration, and visionary funding models. They remind us that innovation is not a sprint but a marathon — one where persistence, purpose, and partnership matter as much as profit.</p>
+
+  <p>At TechNova Hub, we believe that startups represent the most human form of innovation. They embody courage — the courage to challenge conventions, to face uncertainty, and to fail in pursuit of progress. Every startup begins with a question: “What if things could be better?” And every founder, in answering that question, takes humanity one step closer to its potential. Whether you’re an entrepreneur, investor, or curious learner, this section invites you to explore the heart of entrepreneurship — its triumphs, its trials, and its transformative power to shape the world we live in.</p>
+</section>
+
+
+
+    <section id="reviews">
+  <h2>Reviews — In-Depth Analysis for Smarter Tech Decisions</h2>
+  <p>Technology reviews are more than product descriptions — they’re navigational tools in a rapidly evolving world. At TechNova Hub, our review philosophy is rooted in clarity, depth, and fairness. We believe that understanding technology should empower users, not overwhelm them. Each review we produce blends objective testing, long-term usability analysis, and contextual insight to help readers make informed decisions. Whether you’re exploring a new smartphone, a developer framework, or an AI productivity tool, our goal is to translate complexity into confidence.</p>
+
+  <p>The digital marketplace is saturated with choices. For every product category — laptops, wearables, developer tools, or cloud platforms — there are dozens of contenders, each promising innovation, efficiency, or disruption. However, innovation doesn’t always equal improvement. The real test of a product lies in how well it integrates into users’ lives and workflows. At TechNova, we go beyond benchmarks and specs. We evaluate how technology performs under real-world conditions: how it feels, how it fits, and how it evolves with time. We don’t just test features; we test experience.</p>
+
+  <p>Our review methodology is built on three pillars: performance, usability, and purpose. Performance examines measurable aspects — speed, stability, accuracy, or power efficiency. Usability explores the human experience — design, accessibility, ergonomics, and user satisfaction. Purpose looks deeper, asking whether the product fulfills its promise, aligns with ethical practices, and contributes meaningfully to the ecosystem it serves. In an age when attention spans are short and hype cycles are long, these three dimensions ensure our analysis remains honest, holistic, and future-focused.</p>
+
+  <p>Let’s take the example of smartphones, one of the most competitive categories in tech. When evaluating a flagship phone, we don’t stop at hardware comparisons. We explore software optimization, ecosystem integration, and long-term updates — factors that determine real user satisfaction. A phone with cutting-edge specs but poor software support quickly loses its value. Battery endurance, thermal management, and security updates often matter more than marginal differences in processor speed. TechNova reviews cut through marketing noise to deliver nuanced perspectives — focusing on sustainability and practicality rather than short-term glamour.</p>
+
+  <p>Laptops and productivity devices are another area where we emphasize long-term usability. While specifications like RAM, SSD speed, and display resolution are important, our testing extends to keyboard ergonomics, port selection, and thermal design. For professionals, comfort and efficiency outweigh raw performance. A laptop that allows eight hours of uninterrupted work without throttling is more valuable than one that scores higher on benchmarks but overheats during extended use. We also examine repairability and upgrade potential, reflecting a growing consumer demand for sustainability and right-to-repair awareness.</p>
+
+  <p>Wearable technology has redefined personal computing by blending health, connectivity, and lifestyle. However, not every wearable delivers meaningful value. At TechNova, we evaluate wearables through long-term testing — tracking accuracy, comfort, and consistency across real-world use. Fitness trackers, for example, often promise precise measurements but vary widely in reliability. Smartwatches, on the other hand, must balance design with functionality — offering relevant notifications without becoming digital distractions. We approach wearables not as accessories but as extensions of human experience, measuring how well they integrate into daily life rather than how flashy they appear on spec sheets.</p>
+
+  <p>Software reviews form a core part of TechNova’s content. With thousands of apps and SaaS tools competing for attention, we focus on those that significantly enhance productivity, creativity, or collaboration. When reviewing software, we prioritize intuitiveness and scalability. The best applications don’t just solve immediate problems; they evolve with users’ needs. Our testing involves practical workflows — real projects, real deadlines, and real challenges. Whether it’s an AI writing assistant, a design tool, or a developer IDE, we assess how software interacts with human creativity and how it adapts to diverse environments.</p>
+
+  <p>In the domain of Artificial Intelligence tools, objectivity is essential. Many AI products promise automation and intelligence but deliver little beyond convenience. TechNova’s AI tool reviews focus on transparency and ethics as much as functionality. Does the tool clearly disclose data usage? Can users opt out of tracking? Is bias mitigated in its model training? These questions define the difference between responsible innovation and superficial marketing. We believe that AI tools should empower users without exploiting them — a philosophy reflected in every evaluation we publish.</p>
+
+  <p>Cloud services and developer platforms form the backbone of modern digital infrastructure. Our reviews of cloud providers — from AWS and Azure to emerging alternatives like DigitalOcean and Vultr — go beyond pricing and performance. We analyze uptime reliability, developer experience, and documentation clarity. The most successful platforms are those that make developers feel confident and supported. We test APIs, deployment speed, security configurations, and integration capabilities. Each review is written to serve both technical professionals and decision-makers, bridging the gap between engineering detail and strategic insight.</p>
+
+  <p>Security products deserve particular scrutiny. In an era of rising cyber threats, antivirus tools, password managers, and VPNs are marketed as digital shields. Yet, effectiveness varies dramatically. Our security reviews combine lab-based testing with simulated attack scenarios. We evaluate detection accuracy, false-positive rates, and privacy practices. Equally important is the company’s track record — how it handles vulnerabilities, communicates breaches, and respects user trust. A truly secure product isn’t just built on encryption; it’s built on accountability. At TechNova, our goal is to help readers make informed security choices without falling prey to fear-based marketing.</p>
+
+  <p>Gaming hardware and software have transformed from entertainment to industry. We assess gaming laptops, GPUs, and peripherals not only for performance but for their contribution to player immersion. Frame rates, thermals, and responsiveness are essential, but so are acoustics, aesthetics, and ecosystem support. In reviewing games, we explore storytelling depth, design philosophy, and technical execution. Games are a blend of art and engineering — and our reviews reflect both. The rise of indie developers and cloud gaming platforms has made the landscape more diverse and inclusive than ever before, offering fresh perspectives and new experiences for players worldwide.</p>
+
+  <p>TechNova also dives deep into reviews of emerging technology — from VR and AR headsets to robotics kits and smart home ecosystems. The connected home revolution, for instance, has introduced both convenience and complexity. Smart lights, speakers, and thermostats promise automation, but integration across brands remains inconsistent. Our reviews test interoperability and privacy in real homes, identifying which ecosystems — such as Apple HomeKit, Google Home, or Amazon Alexa — provide the best balance of functionality and security. As smart devices become more pervasive, understanding their implications on data, autonomy, and lifestyle becomes crucial.</p>
+
+  <p>Beyond individual products, TechNova’s review section examines industry trends through comparative analysis. For example, our annual “TechNova Performance Index” evaluates top devices across categories to identify real-world leaders. By normalizing data from multiple tests, we help readers understand not just which product is best, but why. Our team also revisits products six months after initial reviews to provide “long-term verdicts” — reflecting how updates, wear, and user feedback affect value over time. This long-view approach sets TechNova apart from traditional tech media that often chase first impressions rather than lasting insights.</p>
+
+  <p>We are particularly passionate about sustainability and repairability. The modern consumer electronics market often prioritizes aesthetics over longevity, leading to massive electronic waste. TechNova’s sustainability reviews highlight brands that challenge this norm. Companies like Framework, Fairphone, and Dell’s Concept Luna initiative are pioneering modular design and recyclable materials. We evaluate the environmental footprint of production, packaging, and end-of-life management. True innovation considers not only performance but planet — and our sustainability score reflects that commitment. By empowering readers to make eco-conscious choices, we aim to contribute to a more responsible tech ecosystem.</p>
+
+  <p>Another critical aspect of our review philosophy is accessibility. Technology should empower everyone, regardless of ability. Accessibility reviews analyze how inclusive software and hardware truly are. Does a productivity app support screen readers? Are interface colors friendly to color-blind users? Can a wearable device assist those with limited mobility? Inclusivity isn’t a feature — it’s a necessity. TechNova collaborates with accessibility consultants to evaluate tools for diverse users, ensuring that every review considers universal design principles and equitable digital experiences.</p>
+
+  <p>We also explore the ethics of product ecosystems. Tech companies today shape not only markets but societies. How they handle privacy, misinformation, and social impact defines their integrity. In our “Ethical Tech Reviews” series, we assess corporate accountability alongside innovation. A smartphone may impress with specs but still raise concerns if it encourages wasteful upgrade cycles or intrusive tracking. A social platform may boast engagement metrics but fail in moderating harmful content. TechNova evaluates these trade-offs, reminding readers that convenience must not come at the cost of conscience.</p>
+
+  <p>When reviewing developer tools and frameworks, we take a builder’s perspective. Our team of engineers tests frameworks like React, Vue, and Next.js by creating real-world prototypes. We document performance, learning curves, and ecosystem support. We also examine API design, community contributions, and documentation quality. A great framework isn’t just efficient — it’s empowering. The same applies to backend technologies like Node.js, Rust, and Go. Our comparative insights help developers choose the right stack for their goals, backed by hands-on experimentation rather than marketing claims.</p>
+
+  <p>Audio technology is another domain where depth matters. Headphones, speakers, and audio interfaces are tested using calibrated equipment and blind listening sessions. Beyond technical fidelity, we evaluate soundstage, comfort, and user interface. Music, podcasts, and meetings all reveal different aspects of performance. Noise cancellation, latency, and connectivity reliability can make or break a listening experience. We rate devices on how well they balance engineering precision with emotional resonance — because the best audio doesn’t just measure well; it moves you.</p>
+
+  <p>In the era of hybrid work, peripherals such as webcams, microphones, and docking stations have become essential. Our reviews emphasize reliability and ergonomics. A great webcam balances clarity with natural tone; a good microphone offers consistent voice reproduction without distortion. We also test compatibility across platforms, ensuring that devices perform equally well on Windows, macOS, and Linux. Each product is evaluated for setup simplicity and firmware support — critical factors for long-term satisfaction.</p>
+
+  <p>One of TechNova’s signature formats is the “Experience Review,” a long-form exploration where we use a product continuously for weeks or months. Instead of relying on first impressions, we track how the product performs through updates, edge cases, and real workloads. For example, our long-term review of the M-series MacBook Air revealed how silent thermals and battery endurance affected creative workflows. Similarly, extended testing of productivity apps like Notion and ClickUp allowed us to understand how scalability and performance evolve as databases grow. These experiential insights give readers a sense of ownership before purchase.</p>
+
+  <p>Our review section also acts as a bridge between innovation and education. We include guides explaining core concepts — what makes OLED superior to LCD, how AI upscaling improves image quality, or why certain processors excel in efficiency. These educational sidebars enrich the review experience, making each piece not just a verdict but a lesson. We aim to cultivate technologically literate readers who can evaluate products independently. Empowerment through understanding is our ultimate goal.</p>
+
+  <p>As part of our transparency policy, TechNova discloses all review conditions. We purchase most review units independently to avoid influence, and when manufacturers provide samples, we clearly mark them. Our editorial decisions are never for sale. Advertising and affiliate links, where used, are separated from content production. This ethical framework ensures that every rating, recommendation, and criticism reflects genuine user value rather than commercial interest. Trust is our currency — and we protect it above all else.</p>
+
+  <p>Looking toward the future, reviews themselves are evolving. Artificial Intelligence is beginning to augment review processes, generating data-driven insights from user feedback at scale. TechNova is developing an AI-assisted review model that aggregates sentiment, reliability, and performance data from thousands of verified users, turning subjective impressions into objective metrics. This hybrid approach — human storytelling guided by machine precision — represents the next frontier of tech journalism.</p>
+
+  <p>Ultimately, our review philosophy rests on one belief: technology should serve people, not the other way around. A good product simplifies life, enhances creativity, or fosters connection. It doesn’t exploit attention or compromise privacy. TechNova reviews remind readers to evaluate products not just by what they can do, but by what they encourage us to become. Because in the end, every device, every line of code, and every platform we build reflects our collective values — the values that shape the world of tomorrow.</p>
+
+  <p>Our mission at TechNova Hub is to create a review ecosystem that empowers every reader to make informed, confident, and conscious tech choices. Whether you’re a developer selecting frameworks, a student buying your first laptop, or an enterprise leader choosing cloud solutions, we provide the insight, context, and clarity you need. Knowledge is the best investment — and every TechNova review is crafted to maximize its return.</p>
+</section>
+
+
+
+    <section id="contact">
+  <h2>Contact</h2>
+  <p>
+    Have feedback, ideas, or collaboration proposals? We’d love to hear from you!  
+    At <strong>TechNova</strong>, we value the curiosity and voices of our readers —
+    innovators, students, thinkers, and professionals from around the globe.
+  </p>
+  <p>
+    Whether you wish to contribute an article, share insights from your field, or suggest a
+    topic for exploration, our editorial team welcomes all creative exchanges. Together, we
+    can shape the conversation on technology, ethics, and the digital transformation of our
+    world.
+  </p>
+  <p>
+    You can reach us directly at:  
+    📧 <a href="mailto:info@technova.com">info@technova.com</a>
+  </p>
+  <p>
+    Stay connected by following us on our social channels for the latest updates, feature
+    stories, and event coverage:
+  </p>
+  <ul style="line-height: 1.8;">
+    <li>🌐 <a href="#">www.technova.com</a></li>
+    <li>🐦 Twitter: <a href="#">@TechNovaOfficial</a></li>
+    <li>📸 Instagram: <a href="#">@technova_media</a></li>
+    <li>💼 LinkedIn: <a href="#">TechNova Network</a></li>
+  </ul>
+  <p>
+    Your thoughts, questions, and feedback drive our mission forward.  
+    <strong>Let’s build the future — together.</strong>
+  </p>
+</section>
+
+
+
+  </main>
+
+  <footer class="site-footer">
+    <div>© 2025 TechNova Hub — All rights reserved</div>
+  </footer>
+
+<script>
+  (function(){
+    // DOM references
+    const searchInner = document.getElementById('searchInner');
+    const searchInput = document.getElementById('siteSearch');
+    const nav = document.getElementById('mainNav');
+    const contactLink = Array.from(nav.querySelectorAll('a')).find(a => a.dataset.target === 'contact');
+    const homeLink = Array.from(nav.querySelectorAll('a')).find(a => a.dataset.target === 'home');
+    const navLinks = nav.querySelectorAll('a');
+
+    // Sections logic (show only selected)
+    function showSection(name){
+      document.querySelectorAll('main section').forEach(sec=>{
+        if(sec.id === name){
+          sec.style.display = '';
+          sec.classList.add('active');
+        } else {
+          sec.style.display = 'none';
+          sec.classList.remove('active');
+        }
+      });
+      // nav active state
+      navLinks.forEach(a => a.classList.toggle('active', a.dataset.target === name));
+      // scroll to top of page so section sits below header
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    // attach nav handlers
+    navLinks.forEach(link=>{
+      link.addEventListener('click', e=>{
+        e.preventDefault();
+        const t = link.dataset.target;
+        showSection(t);
+      });
+    });
+
+    // Compute expanded width so right edge aligns to contactLink's right edge.
+    // We'll compute the distance from the left edge of searchInner to the right edge of contactLink
+    // and set that as the expanded width (plus small padding).
+    function computeExpandedWidth(){
+      // Ensure elements exist
+      if(!contactLink || !searchInner) return null;
+      const contactRect = contactLink.getBoundingClientRect();
+      const searchRect = searchInner.getBoundingClientRect();
+      // compute target width so searchInner.right ~ contactRect.right
+      const viewportOffset = 8; // small padding
+      const desiredRight = contactRect.right + viewportOffset;
+      const left = searchRect.left;
+      let width = desiredRight - left;
+      // keep bounds: min 220px, max 92% viewport
+      const maxAllowed = Math.round(window.innerWidth * 0.92);
+      width = Math.max(220, Math.min(width, maxAllowed));
+      return width;
+    }
+
+    // on focus, set expanded width and add class
+    searchInput.addEventListener('focus', (e)=>{
+      const w = computeExpandedWidth();
+      if(w) {
+        searchInner.style.width = w + 'px';
+      } else {
+        searchInner.style.width = '520px';
+      }
+      searchInner.classList.add('focused');
+    });
+
+    // on blur revert to original width
+    searchInput.addEventListener('blur', (e)=>{
+      // small delay to let click on suggestions etc. (if any)
+      setTimeout(()=>{
+        searchInner.style.width = ''; // revert to CSS width (defaults to 220px)
+        searchInner.classList.remove('focused');
+      }, 120);
+    });
+
+    // recompute on resize in case nav moves
+    window.addEventListener('resize', ()=> {
+      if(document.activeElement === searchInput){
+        const w = computeExpandedWidth();
+        if(w) searchInner.style.width = w + 'px';
+      } else {
+        searchInner.style.width = '';
+      }
+    });
+
+    // initialize: ensure Home shown
+    showSection('home');
+
+    // keyboard '/' to focus search
+    window.addEventListener('keydown', (e)=>{
+      const tag = document.activeElement.tagName.toLowerCase();
+      if(e.key === '/' && tag !== 'input' && tag !== 'textarea'){
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+  })();
+</script>
+
+</body>
+</html>

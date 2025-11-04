@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TechNova Hub — Search UX Fix</title>
+<style>
+  :root{
+    --bg: #e6eefc;
+    --card: #ffffff;
+    --text: #0c2030;
+    --muted: #516774;
+    --accent-cyan: #49c7ff;
+    --accent-violet: #8a63ff;
+    --nav-bg: linear-gradient(90deg,#6f7bff,#9a78ff);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, Arial;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header.site-header{
+    padding:40px 6%;
+    text-align:center;
+    background: linear-gradient(135deg, rgba(138,99,255,0.12), rgba(73,199,255,0.06));
+    border-bottom: 1px solid rgba(10,20,40,0.04);
+  }
+  header h1{font-size:2.2rem;color:#072033;margin-bottom:6px}
+  header p.lead{color:var(--muted);max-width:900px;margin:0 auto}
+
+  /* ---- SEARCH: placed after header, before nav ---- */
+  .search-wrap{
+    padding:14px 6%;
+    display:flex;
+    justify-content:flex-start; /* align to nav start (Home) */
+    align-items:center;
+    gap:12px;
+    background: transparent;
+  }
+
+  /* container that's aligned with nav left edge */
+  .search-inner{
+    position:relative;
+    /* initial width small and will be changed by JS */
+    width: 220px;
+    max-width:86%;
+    transition: width 380ms cubic-bezier(.2,.9,.2,1), box-shadow 200ms;
+  }
+
+  /* the input itself */
+  .search-input{
+    width:100%;
+    padding:12px 44px 12px 44px; /* space for icon inside */
+    font-size:16px;
+    line-height:20px;
+    border-radius:999px;
+    border:1px solid rgba(10,20,40,0.06);
+    background: var(--card);
+    color:var(--text);
+    outline:none;
+    box-shadow: 0 8px 18px rgba(11,30,50,0.04);
+  }
+  .search-input::placeholder{ color: #91a7bb; }
+
+  /* professional inline SVG icon inside the input */
+  .search-icon{
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    width:1.05em;     /* match the font-size */
+    height:1.05em;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+  }
+  .search-icon svg{ width:100%; height:100%; display:block; }
+
+  /* subtle focus state */
+  .search-inner.focused{
+    box-shadow: 0 16px 40px rgba(138,99,255,0.12);
+    border-radius:999px;
+  }
+
+  /* NAV */
+  nav.topnav{
+    background: var(--nav-bg);
+    padding:8px 6%;
+    box-shadow: 0 6px 20px rgba(15,20,40,0.08);
+  }
+  nav.topnav ul{ display:flex; gap:8px; list-style:none; align-items:center; justify-content:flex-start; }
+  nav.topnav a{
+    display:inline-block;
+    padding:12px 18px;
+    color:#fff;
+    text-decoration:none;
+    border-radius:8px;
+    font-weight:600;
+    letter-spacing:0.4px;
+    font-size:14px;
+    transition: transform 160ms, background 160ms;
+  }
+  nav.topnav a:hover{ transform:translateY(-3px); box-shadow:0 10px 26px rgba(10,20,40,0.08) }
+  nav.topnav a.active{ background: rgba(255,255,255,0.12) }
+
+  main.site-main{
+    padding:28px 6%;
+    min-height: calc(100vh - 260px); /* ensure main fills page area between header/footer */
+  }
+
+  /* basic section */
+  section{
+    max-width:1100px;
+    margin:0 auto;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,252,255,0.98));
+    padding:26px;
+    border-radius:12px;
+    box-shadow: 0 8px 28px rgba(11,30,60,0.06);
+    border:1px solid rgba(10,20,40,0.03);
+  }
+  h2{ color: var(--accent-violet); margin-bottom:10px }
+  p{ color: #12303e; line-height:1.8; margin-bottom:14px; text-align:justify }
+
+  footer.site-footer{
+    background: linear-gradient(90deg,#6f7bff,#9a78ff);
+    padding:30px 6%;
+    color:white;
+    text-align:center;
+  }
+
+  /* responsive */
+  @media (max-width:780px){
+    .search-wrap{ justify-content:center }
+    .search-inner{ width:86% !important }
+    nav.topnav ul{ justify-content:center; flex-wrap:wrap }
+  }
+</style>
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>TechNova Hub</h1>
+    <p class="lead"><center>Balanced, professional tech coverage — now with precise search UX</center></p>
+  </header>
+
+  <!-- SEARCH: placed just after header and before nav -->
+  <div class="search-wrap" aria-hidden="false">
+    <!-- search-inner will be positioned to align with the nav left edge;
+         JS will compute expanded width to align with Contact tab's right edge -->
+    <div id="searchInner" class="search-inner" role="search" aria-label="Site search">
+      <input id="siteSearch" class="search-input" type="search" placeholder="Search..." aria-label="Search TechNova">
+      <span class="search-icon" aria-hidden="true">
+        <!-- Professional magnifier SVG (clean stroke + subtle gradient) -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="gradMag" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#49c7ff"/>
+              <stop offset="1" stop-color="#8a63ff"/>
+            </linearGradient>
+          </defs>
+          <path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" fill="none" stroke="url(#gradMag)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 21l-4.5-4.5" fill="none" stroke="url(#gradMag)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- NAV (must be after search in DOM) -->
+  <nav class="topnav" role="navigation" aria-label="Primary">
+    <ul id="mainNav">
+      <li><a href="#home" data-target="home" class="nav-link active">Home</a></li>
+      <li><a href="#ai" data-target="ai" class="nav-link">AI & Innovation</a></li>
+      <li><a href="#startups" data-target="startups" class="nav-link">Startups</a></li>
+      <li><a href="#reviews" data-target="reviews" class="nav-link">Reviews</a></li>
+      <li><a href="#contact" data-target="contact" class="nav-link">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main class="site-main" id="siteMain" tabindex="-1">
+   <section id="home" class="active">
+  <h2>Welcome to TechNova</h2>
+  <p>
+    In a world that evolves at the speed of thought, <strong>TechNova</strong> stands as your
+    window to the future — a destination where technology meets imagination. Every click,
+    every scroll, and every article here is designed to bring you closer to the pulse of
+    innovation shaping our everyday lives. Whether it’s the rise of artificial intelligence,
+    the emergence of sustainable computing, or the invisible revolutions of quantum
+    processing, TechNova helps you see not just where technology is today, but where it’s
+    headed tomorrow.
+  </p>
+  <p>
+    As you explore our platform, you’ll discover how science and creativity blend into
+    progress. We look at technology not as cold machinery but as the language of modern
+    civilization — an evolving story told through inventions, codes, and human ambition.
+    TechNova’s mission is to make that story clear, inspiring, and meaningful for everyone
+    who dreams of a smarter, more connected future.
+  </p>
+  <p>
+    At the heart of TechNova lies curiosity. We dive into the origins of every breakthrough,
+    tracing the journey from a spark of an idea in a lab to the product that transforms an
+    industry. Each article is crafted with precision — balanced between technical accuracy
+    and narrative clarity — to keep you informed, engaged, and forward-thinking.
+  </p>
+  <p>
+    From the first personal computer to today’s generative AI models, the rhythm of progress
+    has never slowed. Our editors and contributors come from diverse fields: computer
+    science, design, philosophy, business, and environmental engineering. That diversity
+    allows us to interpret innovation not just through the lens of data and performance but
+    through its social, ethical, and cultural impacts as well.
+  </p>
+  <p>
+    Here, you’ll find thought pieces on how automation is redefining the modern workforce,
+    how startups are rewriting the rules of competition, and how the internet of things is
+    transforming cities into ecosystems of intelligence. You’ll explore the fine line between
+    human creativity and artificial reasoning, between digital privacy and data-driven
+    convenience, between invention and sustainability.
+  </p>
+  <p>
+    TechNova is also about people — the brilliant engineers, designers, entrepreneurs, and
+    thinkers who make these innovations possible. Through exclusive interviews, behind-the-scenes
+    features, and data-driven reports, we celebrate those who are not just predicting the
+    future but building it. Every success story we share becomes a beacon for new ideas, and
+    every challenge we analyze opens a dialogue about responsibility, ethics, and the shared
+    destiny of our digital world.
+  </p>
+  <p>
+    But we go beyond news. TechNova is a living library for those who wish to understand the
+    “why” behind technology. We explore the philosophy of innovation — why humans invent,
+    how they adapt, and what it means for the generations to come. Our long-form features
+    invite readers to slow down in a fast-moving world and think deeply about progress. It’s
+    not about chasing trends; it’s about decoding them.
+  </p>
+  <p>
+    The platform’s design mirrors that philosophy — clean, intuitive, and responsive. Our
+    interface ensures that whether you’re reading on a large desktop screen or a mobile
+    device, the experience remains immersive and distraction-free. Combined with our
+    signature light-and-violet aesthetic, the visual identity of TechNova represents both the
+    calm of logic and the spark of creativity.
+  </p>
+  <p>
+    We believe that the future of technology should belong to everyone. That’s why TechNova
+    is written not only for engineers and experts but for dreamers, creators, and the
+    everyday reader curious about how innovation impacts real life. Each story is a bridge —
+    connecting science with society, code with emotion, and the abstract with the tangible.
+  </p>
+  <p>
+    As you continue exploring, you’ll see how TechNova breaks down complex subjects into
+    beautifully told narratives. We tackle questions like: How can AI ethics shape
+    humanity’s moral compass? What does the future of sustainable hardware look like? Can
+    technology truly coexist with environmental balance? In our ever-expanding digital
+    frontier, these are not just topics of interest — they are the defining conversations of
+    our age.
+  </p>
+  <p>
+    Every visit to TechNova is an invitation — to learn, to question, to imagine. Because
+    while technology defines the tools of the future, it’s our collective imagination that
+    defines its purpose. And in that shared pursuit, TechNova is not just a website; it’s a
+    movement of thinkers, innovators, and lifelong learners shaping the blueprint of
+    tomorrow.
+  </p>
+  <p>
+    <strong>Welcome to TechNova.</strong> The future starts here — and it begins with you.
+  </p>
+</section>
+
+
+    <section id="ai">
+  <h2>AI & Innovation</h2>
+  <p>
+    Artificial Intelligence is no longer a futuristic concept — it is the heartbeat of the
+    21st century’s digital evolution. From predicting weather patterns to decoding complex
+    genomes, AI systems are silently shaping every aspect of modern civilization. At
+    <strong>TechNova</strong>, we explore this technological renaissance in detail,
+    uncovering how machine learning, neural networks, and generative algorithms are
+    revolutionizing industries and redefining human potential.
+  </p>
+  <p>
+    Innovation begins with curiosity, and AI represents humanity’s most daring question yet:
+    can a machine think? Today, AI is not only answering that question but raising new ones.
+    With every dataset it processes and every model it trains, it mirrors the intricacies of
+    human cognition — learning patterns, recognizing emotions, and optimizing decisions
+    beyond human speed or scale. From self-driving vehicles to conversational agents, AI is
+    steadily integrating into our daily lives, often in ways we don’t even notice.
+  </p>
+  <p>
+    Yet the true story of innovation goes deeper. Behind every AI breakthrough lies a
+    convergence of disciplines: computer science, mathematics, psychology, linguistics, and
+    philosophy. TechNova takes you beyond the headlines, into the labs and minds of the
+    researchers designing the future. We explore how deep learning models evolve, how
+    generative AI reshapes art and creativity, and how ethics must evolve alongside
+    algorithms to ensure transparency and trust.
+  </p>
+  <p>
+    The modern AI landscape is a dynamic ecosystem. Corporations, startups, and
+    universities are collaborating globally to refine intelligence systems that can reason,
+    adapt, and improve autonomously. These efforts fuel innovations such as real-time
+    language translation, predictive healthcare analytics, and robotics that can assist in
+    disaster relief or planetary exploration. The boundaries between science fiction and
+    reality blur more each day.
+  </p>
+  <p>
+    But progress brings responsibility. As automation grows, questions about data privacy,
+    bias, and accountability become increasingly urgent. TechNova’s AI section examines the
+    delicate balance between advancement and ethics — how we can build systems that
+    empower humanity rather than replace it. We analyze global AI policies, the development
+    of explainable AI (XAI), and the emerging frameworks that ensure fairness, transparency,
+    and security in algorithmic decision-making.
+  </p>
+  <p>
+    Our mission is to empower readers with clarity — not just on what AI can do, but what it
+    should do. We explore case studies from leading innovators, share insights from
+    technologists and ethicists, and spotlight communities leveraging AI for social good,
+    such as climate modeling, accessibility, and medical research.
+  </p>
+  <p>
+    The future of innovation isn’t about replacing human intelligence — it’s about
+    amplifying it. AI represents the next step in human evolution: the ability to
+    collaborate with machines to solve problems once deemed impossible. TechNova continues
+    to chronicle this fascinating journey, bringing together technology, philosophy, and
+    imagination to paint a holistic picture of the age of intelligence.
+  </p>
+  <p><strong>Welcome to the era of AI — where the impossible becomes inevitable.</strong></p>
+</section>
+
+
+    <section id="startups">
+  <h2>Startups</h2>
+  <p>
+    The startup ecosystem is the creative engine of the modern economy — a place where bold
+    ideas, daring entrepreneurs, and disruptive technologies converge to challenge the
+    status quo. At <strong>TechNova</strong>, we bring you the stories, insights, and
+    strategies that power this revolution of innovation and ambition.
+  </p>
+  <p>
+    Every successful startup begins with a vision — a simple “what if” that transforms into
+    a movement. From small garage ventures to billion-dollar unicorns, these companies are
+    rewriting the rules of business in an era dominated by digital transformation. Through
+    our in-depth coverage, we uncover how founders navigate funding rounds, scale
+    operations, and harness emerging technologies to create meaningful impact.
+  </p>
+  <p>
+    The global startup landscape is more dynamic than ever. Tech hubs in Silicon Valley,
+    Bengaluru, Berlin, and Singapore are incubating next-generation innovations across
+    fintech, green energy, biotechnology, and AI-driven solutions. TechNova highlights these
+    hubs as centers of creativity — where innovation thrives on diversity, collaboration,
+    and purpose-driven growth.
+  </p>
+  <p>
+    In this section, you’ll find feature stories on startups tackling real-world challenges
+    such as clean mobility, sustainable packaging, digital healthcare, and decentralized
+    finance. We explore not only their technological innovations but the human stories
+    behind them — the challenges, failures, and moments of brilliance that define the
+    entrepreneurial journey.
+  </p>
+  <p>
+    At TechNova, we believe that innovation is not limited to coding or capital; it’s about
+    mindset. The modern entrepreneur blends data with empathy, algorithms with intuition.
+    Through interviews and analysis, we highlight founders who are reimagining industries —
+    those who see beyond profit to purpose and sustainability.
+  </p>
+  <p>
+    We also dive deep into startup culture — the workspaces, the mental resilience, the
+    leadership philosophies, and the technological trends shaping tomorrow’s business
+    landscape. From early-stage venture advice to market disruption insights, our content
+    empowers aspiring founders and investors alike.
+  </p>
+  <p>
+    <strong>TechNova’s Startups section</strong> is a celebration of courage — of people who
+    dream audaciously and work tirelessly to make innovation accessible to all. It’s not
+    just about who builds the next app, but who builds the next world.
+  </p>
+  <p>
+    Whether you’re a visionary entrepreneur or a curious reader, this section is your guide
+    to understanding how ideas become revolutions — one startup at a time.
+  </p>
+</section>
+
+
+    <section id="reviews">
+  <h2>Reviews</h2>
+  <p>
+    In a world flooded with new technology every day, making the right choice can be
+    overwhelming. That’s why <strong>TechNova Reviews</strong> is here — to bring clarity,
+    honesty, and expert insight into every product, service, and innovation that enters the
+    tech market. Our reviews are designed to inform, compare, and guide readers toward
+    making smarter decisions in the ever-evolving digital landscape.
+  </p>
+  <p>
+    We test and evaluate with precision. From AI-driven tools and software platforms to
+    next-generation smartphones, wearables, and computing devices, TechNova ensures that
+    every review is grounded in real-world experience. We go beyond specs — analyzing
+    performance, usability, sustainability, and value for money.
+  </p>
+  <p>
+    What sets our reviews apart is depth. Each article is a fusion of technical breakdown
+    and human perspective. We not only measure benchmark results but explore the emotional
+    experience of using technology. After all, the best tech isn’t just powerful — it’s
+    meaningful.
+  </p>
+  <p>
+    In addition to product reviews, we feature comprehensive comparisons and buyer’s guides.
+    Whether you’re choosing between AI productivity apps, cloud platforms, or the latest VR
+    headsets, TechNova’s insights help you decide with confidence. We believe in
+    transparency — no hidden sponsors, no biased opinions — just authentic tech journalism
+    built on trust.
+  </p>
+  <p>
+    Our experts also explore sustainability in technology — reviewing eco-friendly devices
+    and brands that prioritize repairability and responsible sourcing. Because the future of
+    innovation must also be sustainable innovation.
+  </p>
+  <p>
+    <strong>TechNova Reviews</strong> is not just about rating gadgets; it’s about empowering
+    users to understand how technology fits into their lifestyles, workflows, and values.
+    Through visual storytelling, in-depth testing, and clear recommendations, we bridge the
+    gap between consumer and creator.
+  </p>
+  <p>
+    So before you buy your next device, read our reviews — your guide to making informed,
+    intelligent tech choices that truly matter.
+  </p>
+</section>
+
+
+    <section id="contact">
+  <h2>Contact</h2>
+  <p>
+    Have feedback, ideas, or collaboration proposals? We’d love to hear from you!  
+    At <strong>TechNova</strong>, we value the curiosity and voices of our readers —
+    innovators, students, thinkers, and professionals from around the globe.
+  </p>
+  <p>
+    Whether you wish to contribute an article, share insights from your field, or suggest a
+    topic for exploration, our editorial team welcomes all creative exchanges. Together, we
+    can shape the conversation on technology, ethics, and the digital transformation of our
+    world.
+  </p>
+  <p>
+    You can reach us directly at:  
+    📧 <a href="mailto:info@technova.com">info@technova.com</a>
+  </p>
+  <p>
+    Stay connected by following us on our social channels for the latest updates, feature
+    stories, and event coverage:
+  </p>
+  <ul style="line-height: 1.8;">
+    <li>🌐 <a href="#">www.technova.com</a></li>
+    <li>🐦 Twitter: <a href="#">@TechNovaOfficial</a></li>
+    <li>📸 Instagram: <a href="#">@technova_media</a></li>
+    <li>💼 LinkedIn: <a href="#">TechNova Network</a></li>
+  </ul>
+  <p>
+    Your thoughts, questions, and feedback drive our mission forward.  
+    <strong>Let’s build the future — together.</strong>
+  </p>
+</section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div>© 2025 TechNova Hub — All rights reserved</div>
+  </footer>
+
+<script>
+  (function(){
+    // DOM references
+    const searchInner = document.getElementById('searchInner');
+    const searchInput = document.getElementById('siteSearch');
+    const nav = document.getElementById('mainNav');
+    const contactLink = Array.from(nav.querySelectorAll('a')).find(a => a.dataset.target === 'contact');
+    const homeLink = Array.from(nav.querySelectorAll('a')).find(a => a.dataset.target === 'home');
+    const navLinks = nav.querySelectorAll('a');
+
+    // Sections logic (show only selected)
+    function showSection(name){
+      document.querySelectorAll('main section').forEach(sec=>{
+        if(sec.id === name){
+          sec.style.display = '';
+          sec.classList.add('active');
+        } else {
+          sec.style.display = 'none';
+          sec.classList.remove('active');
+        }
+      });
+      // nav active state
+      navLinks.forEach(a => a.classList.toggle('active', a.dataset.target === name));
+      // scroll to top of page so section sits below header
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    // attach nav handlers
+    navLinks.forEach(link=>{
+      link.addEventListener('click', e=>{
+        e.preventDefault();
+        const t = link.dataset.target;
+        showSection(t);
+      });
+    });
+
+    // Compute expanded width so right edge aligns to contactLink's right edge.
+    // We'll compute the distance from the left edge of searchInner to the right edge of contactLink
+    // and set that as the expanded width (plus small padding).
+    function computeExpandedWidth(){
+      // Ensure elements exist
+      if(!contactLink || !searchInner) return null;
+      const contactRect = contactLink.getBoundingClientRect();
+      const searchRect = searchInner.getBoundingClientRect();
+      // compute target width so searchInner.right ~ contactRect.right
+      const viewportOffset = 8; // small padding
+      const desiredRight = contactRect.right + viewportOffset;
+      const left = searchRect.left;
+      let width = desiredRight - left;
+      // keep bounds: min 220px, max 92% viewport
+      const maxAllowed = Math.round(window.innerWidth * 0.92);
+      width = Math.max(220, Math.min(width, maxAllowed));
+      return width;
+    }
+
+    // on focus, set expanded width and add class
+    searchInput.addEventListener('focus', (e)=>{
+      const w = computeExpandedWidth();
+      if(w) {
+        searchInner.style.width = w + 'px';
+      } else {
+        searchInner.style.width = '520px';
+      }
+      searchInner.classList.add('focused');
+    });
+
+    // on blur revert to original width
+    searchInput.addEventListener('blur', (e)=>{
+      // small delay to let click on suggestions etc. (if any)
+      setTimeout(()=>{
+        searchInner.style.width = ''; // revert to CSS width (defaults to 220px)
+        searchInner.classList.remove('focused');
+      }, 120);
+    });
+
+    // recompute on resize in case nav moves
+    window.addEventListener('resize', ()=> {
+      if(document.activeElement === searchInput){
+        const w = computeExpandedWidth();
+        if(w) searchInner.style.width = w + 'px';
+      } else {
+        searchInner.style.width = '';
+      }
+    });
+
+    // initialize: ensure Home shown
+    showSection('home');
+
+    // keyboard '/' to focus search
+    window.addEventListener('keydown', (e)=>{
+      const tag = document.activeElement.tagName.toLowerCase();
+      if(e.key === '/' && tag !== 'input' && tag !== 'textarea'){
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+  })();
+</script>
+
+</body>
+</html>

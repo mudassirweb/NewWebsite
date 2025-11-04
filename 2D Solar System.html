@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ultimate 2D Solar System</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #000015 0%, #000000 100%);
+    color: white;
+    font-family: Arial, sans-serif;
+  }
+  #info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.5);
+    padding: 10px 14px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+  }
+  #planet-info {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px 14px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    display: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="universe"></canvas>
+<div id="info">
+  ☀️ <b>Ultimate 2D Solar System</b><br>
+  Click a planet to zoom • ↑/↓ = speed • Click once = enable space sound
+</div>
+<div id="planet-info"></div>
+
+<script>
+const canvas = document.getElementById("universe");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+let t = 0;
+let speed = 1;
+let zoomPlanet = null;
+
+// planet data (8 planets)
+const planets = [
+  {name:"Mercury", color:"#b5b5b5", dist:60, size:4, speed:0.04, info:"Smallest planet and closest to the Sun."},
+  {name:"Venus", color:"#e0b25a", dist:90, size:6, speed:0.03, info:"Hottest planet with a thick, toxic atmosphere."},
+  {name:"Earth", color:"#3fa7ff", dist:120, size:7, speed:0.025, info:"Our home planet, rich with life and water."},
+  {name:"Mars", color:"#e25341", dist:150, size:6, speed:0.02, info:"The Red Planet with massive volcanoes and canyons."},
+  {name:"Jupiter", color:"#ffcc88", dist:190, size:12, speed:0.015, info:"Largest planet with a giant red storm."},
+  {name:"Saturn", color:"#d6c28b", dist:240, size:10, speed:0.012, info:"Known for its stunning ring system."},
+  {name:"Uranus", color:"#77e0e0", dist:280, size:8, speed:0.009, info:"An ice giant that rotates on its side."},
+  {name:"Neptune", color:"#3a66ff", dist:320, size:8, speed:0.007, info:"Farthest planet, windy and cold."}
+];
+
+const planetInfoBox = document.getElementById("planet-info");
+
+// resize
+window.addEventListener("resize", () => {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+});
+
+// keyboard speed control
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp") speed *= 1.2;
+  if (e.key === "ArrowDown") speed *= 0.8;
+});
+
+// optional ambient sound
+let audioCtx;
+function startSound() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc1.frequency.value = 40;
+  osc2.frequency.value = 43;
+  osc1.type = "sine";
+  osc2.type = "triangle";
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(audioCtx.destination);
+  gain.gain.value = 0.03;
+  osc1.start();
+  osc2.start();
+}
+window.addEventListener("click", startSound, {once:true});
+
+// draw and animate
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  // background stars
+  for (let i = 0; i < 60; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.random()})`;
+    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 1);
+  }
+
+  // sun glow
+  const grd = ctx.createRadialGradient(cx, cy, 5, cx, cy, 60);
+  grd.addColorStop(0, "#ffffaa");
+  grd.addColorStop(1, "rgba(255,150,0,0)");
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 60, 0, Math.PI * 2);
+  ctx.fill();
+
+  // sun core
+  ctx.fillStyle = "yellow";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+  ctx.fill();
+
+  // planets
+  planets.forEach((p, i) => {
+    const angle = t * p.speed * speed;
+    const orbitRadius = zoomPlanet ? p.dist * 0.4 : p.dist;
+    const x = cx + Math.cos(angle) * orbitRadius;
+    const y = cy + Math.sin(angle) * orbitRadius;
+
+    // orbit path
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, orbitRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // orbit trails
+    ctx.strokeStyle = "rgba(255,255,255,0.03)";
+    for (let j = 0; j < 10; j++) {
+      const trailAngle = angle - j * 0.15;
+      const tx = cx + Math.cos(trailAngle) * orbitRadius;
+      const ty = cy + Math.sin(trailAngle) * orbitRadius;
+      ctx.beginPath();
+      ctx.arc(tx, ty, 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // planet
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(x, y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // labels
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.fillText(p.name, x, y - p.size - 8);
+
+    p.x = x;
+    p.y = y;
+  });
+
+  t += 0.5;
+  requestAnimationFrame(draw);
+}
+draw();
+
+// zoom on planet click
+canvas.addEventListener("click", e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const clicked = planets.find(p => {
+    const dx = p.x - mx;
+    const dy = p.y - my;
+    return Math.sqrt(dx * dx + dy * dy) < p.size + 5;
+  });
+  if (clicked) {
+    zoomPlanet = clicked;
+    planetInfoBox.style.display = "block";
+    planetInfoBox.innerHTML = `<b>${clicked.name}</b><br>${clicked.info}`;
+  } else {
+    zoomPlanet = null;
+    planetInfoBox.style.display = "none";
+  }
+});
+</script>
+</body>
+</html>

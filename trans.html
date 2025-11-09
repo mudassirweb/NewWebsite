@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shape & Color Transformations</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f7fa;
+    color: #222;
+    text-align: center;
+    padding: 50px;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    margin-top: 40px;
+  }
+
+  .box {
+    width: 120px;
+    height: 120px;
+    transition: all 2s ease;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+
+  /* First square — simple transition to rectangle */
+  .box1 {
+    background-color: #ff5722;
+  }
+  .box1:hover {
+    width: 300px;
+    background-color: #2196f3;
+  }
+
+  /* Second square — morphs into diamond with multi-color animation */
+  .box2 {
+    background-color: #4caf50;
+  }
+  .box2:hover {
+    width: 150px;
+    height: 150px;
+    transform: rotate(45deg); /* turns square into diamond */
+    animation: colorChange2 3s linear forwards;
+  }
+
+  @keyframes colorChange2 {
+    0%   { background-color: #4caf50; } 
+    10%  { background-color: #8bc34a; } 
+    20%  { background-color: #cddc39; } 
+    30%  { background-color: #ffeb3b; } 
+    40%  { background-color: #ffc107; } 
+    50%  { background-color: #ff9800; } 
+    60%  { background-color: #f44336; } 
+    70%  { background-color: #e91e63; } 
+    80%  { background-color: #9c27b0; } 
+    90%  { background-color: #3f51b5; } 
+    100% { background-color: #2196f3; } 
+  }
+
+  /* Third square — morphs into a circle with rich rainbow animation */
+  .box3 {
+    background-color: #9c27b0;
+  }
+  .box3:hover {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%; /* turns square into circle */
+    animation: colorChange3 4s linear forwards;
+  }
+
+  @keyframes colorChange3 {
+    0%   { background-color: #9c27b0; } 
+    10%  { background-color: #e91e63; } 
+    20%  { background-color: #f44336; } 
+    30%  { background-color: #ff9800; } 
+    40%  { background-color: #ffeb3b; } 
+    50%  { background-color: #cddc39; } 
+    60%  { background-color: #4caf50; } 
+    70%  { background-color: #00bcd4; } 
+    80%  { background-color: #03a9f4; } 
+    90%  { background-color: #3f51b5; } 
+    100% { background-color: #673ab7; } 
+  }
+</style>
+</head>
+<body>
+
+<h1>Shape & Color Transformation Effects</h1>
+<p>Hover over each square to see it change shape and color.</p>
+
+<div class="container">
+  <div class="box box1"></div>
+  <div class="box box2"></div>
+  <div class="box box3"></div>
+</div>
+
+</body>
+</html>

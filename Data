@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Data Visualization Dashboard</title>
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f2f4ff;
+    padding:30px;
+}
+
+/* Heading */
+.top-heading{
+    font-size:32px;
+    font-weight:bold;
+    color:#0d49c0;
+    text-align:left;
+    margin-bottom:20px;
+}
+
+/* Blue background box */
+.blue-box{
+    background:#0b54c9;
+    padding:60px 20px;
+    border-radius:10px;
+    width:90%;
+    margin:auto;
+}
+
+/* White card inside */
+.card{
+    background:white;
+    width:85%;
+    margin:auto;
+    padding:30px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 5px 20px rgba(0,0,0,0.15);
+}
+
+/* Main Heading */
+.card h2{
+    font-size:34px;
+    margin-bottom:25px;
+}
+
+/* 3 charts in row */
+.charts{
+    display:flex;
+    gap:25px;
+    justify-content:center;
+}
+
+/* Chart base box */
+.chart-box{
+    background:#f7f7f7;
+    padding:12px;
+    border-radius:10px;
+    text-align:center;
+}
+
+/* BAR CHART */
+.bar-chart{
+    width:230px;
+}
+.bars{
+    display:flex;
+    gap:10px;
+    align-items:end;
+    height:120px;
+    margin-top:10px;
+}
+.bars div{
+    width:28px;
+    background:#6aa6ff;
+    border-radius:4px;
+}
+.b1{ height:40%; }
+.b2{ height:60%; }
+.b3{ height:80%; }
+.b4{ height:55%; }
+.b5{ height:75%; }
+
+/* LINE CHART */
+.line-chart{
+    width:260px;
+}
+svg{
+    width:100%;
+    height:130px;
+}
+
+/* PIE CHART */
+.pie-chart{
+    width:230px;
+}
+.pie{
+    width:140px;
+    height:140px;
+    margin:auto;
+    border-radius:50%;
+    background:conic-gradient(
+        #ff6b6b 0 55%,
+        #4dd5c0 55% 80%,
+        #a96dfb 80% 100%
+    );
+}
+.legend{
+    display:flex;
+    justify-content:space-around;
+    margin-top:10px;
+    font-size:13px;
+}
+.legend span{
+    width:12px;
+    height:12px;
+    display:inline-block;
+    border-radius:3px;
+}
+
+/* Bottom info boxes */
+.info{
+    display:flex;
+    justify-content:space-around;
+    margin-top:35px;
+}
+.info div{
+    text-align:left;
+}
+.info h3{
+    margin:0;
+    font-size:16px;
+}
+.info p{
+    margin:4px 0 0 0;
+    color:gray;
+}
+</style>
+</head>
+<body>
+
+<div class="top-heading">Bonus: Data Visualization Dashboard</div>
+
+<div class="blue-box">
+
+    <div class="card">
+        <h2>Data Visualization Dashboard</h2>
+
+        <div class="charts">
+
+            <!-- BAR CHART -->
+            <div class="chart-box bar-chart">
+                <h4>Monthly Sales</h4>
+                <div class="bars">
+                    <div class="b1"></div>
+                    <div class="b2"></div>
+                    <div class="b3"></div>
+                    <div class="b4"></div>
+                    <div class="b5"></div>
+                </div>
+            </div>
+
+            <!-- LINE CHART -->
+            <div class="chart-box line-chart">
+                <h4>Website Traffic</h4>
+                <svg viewBox="0 0 100 60">
+                    <polyline 
+                        points="0,45 20,40 40,38 60,33 80,28 100,20"
+                        fill="none"
+                        stroke="#6aa6ff"
+                        stroke-width="3"
+                    />
+                </svg>
+            </div>
+
+            <!-- PIE CHART -->
+            <div class="chart-box pie-chart">
+                <h4>Device Users</h4>
+                <div class="pie"></div>
+
+                <div class="legend">
+                    <div><span style="background:#ff6b6b"></span> Desktop</div>
+                    <div><span style="background:#4dd5c0"></span> Mobile</div>
+                    <div><span style="background:#a96dfb"></span> Tablet</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- bottom info -->
+        <div class="info">
+            <div>
+                <h3>Proficiency Level</h3>
+                <p>Advanced</p>
+            </div>
+            <div>
+                <h3>Skill Required</h3>
+                <p>HTML, CSS, JavaScript</p>
+            </div>
+            <div>
+                <h3>GitHub Link</h3>
+                <p>Dashboard</p>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
